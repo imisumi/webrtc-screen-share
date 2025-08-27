@@ -84,6 +84,29 @@ endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE
     imgui
 )
+
+# Platform-specific defines and libraries
+if(WIN32)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        PLATFORM_WINDOWS=1
+        WINRT_LEAN_AND_MEAN
+    )
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        windowsapp
+        shcore
+        psapi
+        d3d11
+        dxgi
+    )
+elseif(APPLE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        PLATFORM_MACOS=1
+    )
+elseif(UNIX)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        PLATFORM_LINUX=1
+    )
+endif()
 # target_link_libraries(${PROJECT_NAME} PRIVATE
 #     fmt::fmt
 #     spdlog::spdlog
