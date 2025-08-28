@@ -1,7 +1,4 @@
 #include "WindowsGraphicsCapture.h"
-
-#ifdef PLATFORM_WINDOWS
-
 #include <iostream>
 #include <vector>
 #include <shellscalingapi.h>
@@ -534,5 +531,3 @@ bool WindowsGraphicsCapture::IsCursorVisible() const
     }
     return false;
 }
-
-#endif // PLATFORM_WINDOWS

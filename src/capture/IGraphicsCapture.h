@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <string_view>
 #include <functional>
 
 struct Monitor
@@ -102,5 +103,5 @@ public:
 	virtual CaptureStatistics GetStatistics() const = 0;
 	virtual bool IsCursorVisible() const = 0;
 
-	virtual const char* GetPlatformName() const = 0;
+	virtual std::string_view GetPlatformName() const noexcept = 0;
 };

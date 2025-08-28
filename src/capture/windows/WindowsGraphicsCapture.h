@@ -1,9 +1,6 @@
 #pragma once
 
 #include "../IGraphicsCapture.h"
-
-#ifdef PLATFORM_WINDOWS
-
 #include <windows.h>
 #include <winrt/base.h>
 #include <winrt/Windows.Graphics.Capture.h>
@@ -41,7 +38,7 @@ public:
     CaptureStatistics GetStatistics() const override;
     bool IsCursorVisible() const override;
 
-    const char* GetPlatformName() const override { return "Windows Graphics Capture API"; }
+    std::string_view GetPlatformName() const noexcept override { return "Windows Graphics Capture API"; }
 
 private:
     bool m_initialized = false;
@@ -57,5 +54,3 @@ private:
 
     void OnFrameArrived();
 };
-
-#endif // PLATFORM_WINDOWS

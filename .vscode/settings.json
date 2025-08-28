@@ -1,0 +1,14 @@
+{
+    "cmake.debugConfig": {
+        "cwd": "${workspaceFolder}"
+    },
+    "cmake.launchBehavior": "debug",
+    "cmake.buildBeforeRun": true,
+    "cmake.defaultVariants": {
+        "buildType": "Debug",
+        "generator": {
+            "long": "Visual Studio 17 2022",
+            "short": "vs2022"
+        }
+    }
+}

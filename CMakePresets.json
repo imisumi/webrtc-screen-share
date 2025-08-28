@@ -1,0 +1,60 @@
+{
+	"version": 10,
+	"configurePresets": [
+		{
+			"name": "default",
+			"displayName": "Default Config",
+			"description": "Default build using Visual Studio generator",
+			"generator": "Visual Studio 17 2022",
+			"binaryDir": "${sourceDir}/build",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug"
+			}
+		},
+		{
+			"name": "release",
+			"displayName": "Release Config",
+			"description": "Release build using Visual Studio generator",
+			"generator": "Visual Studio 17 2022",
+			"binaryDir": "${sourceDir}/build",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release"
+			}
+		},
+		{
+			"name": "vs2022-amd64",
+			"displayName": "Visual Studio 2022 - amd64",
+			"description": "Using compilers for Visual Studio 17 2022 (x64 architecture)",
+			"generator": "Visual Studio 17 2022",
+			"toolset": "host=x64",
+			"architecture": "x64",
+			"binaryDir": "${sourceDir}/build",
+			"cacheVariables": {
+				"CMAKE_C_COMPILER": "cl.exe",
+				"CMAKE_CXX_COMPILER": "cl.exe"
+			}
+		}
+	],
+	"buildPresets": [
+		{
+			"name": "default",
+			"configurePreset": "default"
+		},
+		{
+			"name": "release",
+			"configurePreset": "release"
+		},
+		{
+			"name": "vs2022-amd64-debug",
+			"displayName": "Visual Studio 2022 - amd64 - Debug",
+			"configurePreset": "vs2022-amd64",
+			"configuration": "Debug"
+		}
+	],
+	"testPresets": [
+		{
+			"name": "default",
+			"configurePreset": "default"
+		}
+	]
+}

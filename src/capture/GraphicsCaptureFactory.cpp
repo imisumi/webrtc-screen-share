@@ -26,7 +26,7 @@ std::unique_ptr<IGraphicsCapture> GraphicsCaptureFactory::Create()
 #endif
 }
 
-const char* GraphicsCaptureFactory::GetCurrentPlatform()
+std::string_view GraphicsCaptureFactory::GetCurrentPlatform() noexcept
 {
 #ifdef PLATFORM_WINDOWS
     return "Windows";

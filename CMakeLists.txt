@@ -28,18 +28,27 @@ add_subdirectory(vendor)
 # find_package(fmt REQUIRED)
 # find_package(spdlog REQUIRED)
 
-# Recursively find all source files in src/
-file(GLOB_RECURSE SOURCES
-    src/*.cpp
-)
+# Platform-specific defines (inherited by all subdirectories)
+if(WIN32)
+    add_compile_definitions(
+        PLATFORM_WINDOWS=1
+        WINRT_LEAN_AND_MEAN
+    )
+    message(STATUS "Configuring for Windows")
+elseif(APPLE)
+    add_compile_definitions(
+        PLATFORM_MACOS=1
+    )
+    message(STATUS "Configuring for macOS")
+elseif(UNIX)
+    add_compile_definitions(
+        PLATFORM_LINUX=1
+    )
+    message(STATUS "Configuring for Linux")
+endif()
 
-# Recursively find all header files in src/ (for IDE support)
-file(GLOB_RECURSE HEADERS
-    src/*.h
-)
-
-# Define targets AFTER finding packages
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+# Add source subdirectory (contains the main target and sub-libraries)
+add_subdirectory(src)
 
 # clang-tidy integration (optional)
 if(ENABLE_CLANG_TIDY)
@@ -80,37 +89,7 @@ elseif(USE_PCH)
     message(STATUS "PCH enabled but src/pch.h not found - skipping PCH")
 endif()
 
-# Link libraries AFTER target configuration
-target_link_libraries(${PROJECT_NAME} PRIVATE
-    imgui
-)
-
-# Platform-specific defines and libraries
-if(WIN32)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        PLATFORM_WINDOWS=1
-        WINRT_LEAN_AND_MEAN
-    )
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        windowsapp
-        shcore
-        psapi
-        d3d11
-        dxgi
-    )
-elseif(APPLE)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        PLATFORM_MACOS=1
-    )
-elseif(UNIX)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        PLATFORM_LINUX=1
-    )
-endif()
-# target_link_libraries(${PROJECT_NAME} PRIVATE
-#     fmt::fmt
-#     spdlog::spdlog
-# )
+# Target configuration is now handled in src/CMakeLists.txt
 
 # Determine OS and architecture strings
 if(WIN32)
@@ -147,8 +126,10 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     # RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin/${OS_NAME}/${ARCH_NAME}
     # RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE}/${CMAKE_SYSTEM_NAME}/${CMAKE_SYSTEM_PROCESSOR}
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin/$<CONFIG>/${CMAKE_SYSTEM_NAME}/${CMAKE_SYSTEM_PROCESSOR}
-    # Set working directory for IDEs (Visual Studio, etc.)
+    # Set working directory for IDEs (Visual Studio, VSCode, etc.)
     VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    # For VSCode CMake Tools
+    FOLDER "Applications"
 )
 
 # Custom target to run the executable from project root
