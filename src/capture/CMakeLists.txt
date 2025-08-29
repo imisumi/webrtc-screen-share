@@ -3,8 +3,7 @@
 # Common capture interface (always included)
 list(APPEND SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/IGraphicsCapture.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/GraphicsCaptureFactory.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/GraphicsCaptureFactory.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/IGraphicsCapture.cpp
 )
 
 # Windows-specific files (only compiled on Windows)

@@ -4,10 +4,12 @@
 #include <stdint.h>
 #include <memory>
 #include <string>
-#include "capture/GraphicsCaptureFactory.h"
+#include "capture/IGraphicsCapture.h"
 #include "platform/IWindow.h"
 #include "platform/IRenderer.h"
 #include "platform/ITexture.h"
+
+#include "platform/ImGuiManager.h"
 
 class App
 {
@@ -51,4 +53,7 @@ private:
 	
 	// Capture rendering
 	std::unique_ptr<ITexture> m_captureTexture;
+
+
+	std::unique_ptr<ImGuiManager> m_imguiManager;
 };

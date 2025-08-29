@@ -1,5 +1,6 @@
 #include "Win32Window.h"
 #include <iostream>
+#include <stdexcept>
 #include <imgui.h>
 #include <imgui_impl_win32.h>
 
@@ -8,9 +9,13 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 Win32Window* Win32Window::s_instance = nullptr;
 
-Win32Window::Win32Window()
+Win32Window::Win32Window(const WindowConfig& config)
 {
     s_instance = this;
+    if (!Initialize(config))
+    {
+        throw std::runtime_error("Failed to initialize Win32 window");
+    }
 }
 
 Win32Window::~Win32Window()

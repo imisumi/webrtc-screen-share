@@ -1,9 +1,8 @@
 #include "D3D11Renderer.h"
 #include "../IWindow.h"
-#include <iostream>
-#include <imgui.h>
-#include <imgui_impl_dx11.h>
-#include <imgui_impl_win32.h>
+#include "../Logger.h"
+#include <chrono>
+#include <sstream>
 
 D3D11Renderer::D3D11Renderer()
 {
@@ -18,7 +17,7 @@ bool D3D11Renderer::Initialize(IWindow *window)
 {
 	if (!window)
 	{
-		std::cout << "Invalid window provided to D3D11Renderer" << std::endl;
+		Logger::Error("Invalid window provided to D3D11Renderer");
 		return false;
 	}
 
@@ -31,26 +30,18 @@ bool D3D11Renderer::Initialize(IWindow *window)
 
 	if (!CreateDeviceAndSwapChain(hwnd, width, height))
 	{
-		std::cout << "Failed to create D3D11 device and swap chain" << std::endl;
+		Logger::Error("Failed to create D3D11 device and swap chain");
 		return false;
 	}
 
 	CreateRenderTarget();
 
-	// Initialize ImGui
-	if (!InitializeImGui())
-	{
-		std::cout << "Failed to initialize ImGui for D3D11" << std::endl;
-		return false;
-	}
-
-	std::cout << "D3D11Renderer initialized successfully" << std::endl;
+	Logger::Info("D3D11Renderer initialized successfully");
 	return true;
 }
 
 void D3D11Renderer::Shutdown()
 {
-	ShutdownImGui();
 	CleanupRenderTarget();
 
 	m_swapChain.Reset();
@@ -61,6 +52,8 @@ void D3D11Renderer::Shutdown()
 
 void D3D11Renderer::BeginFrame()
 {
+	m_frameStartTime = std::chrono::high_resolution_clock::now();
+
 	// Handle any pending resize
 	if (m_resizeWidth != 0 && m_resizeHeight != 0)
 	{
@@ -73,7 +66,7 @@ void D3D11Renderer::BeginFrame()
 		}
 		else
 		{
-			std::cout << "Failed to resize swap chain buffers" << std::endl;
+			Logger::Error("Failed to resize swap chain buffers");
 		}
 	}
 
@@ -85,14 +78,31 @@ void D3D11Renderer::BeginFrame()
 	}
 	m_swapChainOccluded = false;
 
-	// Begin ImGui frame
-	NewImGuiFrame();
+	m_context->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), nullptr);
 }
 
 void D3D11Renderer::EndFrame()
 {
-	// Just render ImGui, don't present yet
-	RenderImGui();
+	auto frameEndTime = std::chrono::high_resolution_clock::now();
+	auto frameDuration = std::chrono::duration_cast<std::chrono::microseconds>(frameEndTime - m_frameStartTime);
+
+	m_stats.frameCount++;
+	m_stats.frameTimeMs = frameDuration.count() / 1000.0f;
+
+	// Update FPS every 60 frames
+	if (m_stats.frameCount % 60 == 0)
+	{
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		if (m_lastFpsUpdate.time_since_epoch().count() > 0)
+		{
+			auto timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - m_lastFpsUpdate);
+			if (timeDiff.count() > 0)
+			{
+				m_stats.fps = 60000.0f / timeDiff.count();
+			}
+		}
+		m_lastFpsUpdate = currentTime;
+	}
 }
 
 void D3D11Renderer::Present()
@@ -114,15 +124,28 @@ void D3D11Renderer::OnWindowResize(int width, int height)
 
 void D3D11Renderer::Clear(float r, float g, float b, float a)
 {
+	if (r < 0.0f || r > 1.0f || g < 0.0f || g > 1.0f || b < 0.0f || b > 1.0f || a < 0.0f || a > 1.0f)
+	{
+		Logger::Warning("Invalid clear color values. All components must be in range [0.0, 1.0]");
+		return;
+	}
+
 	if (m_context && m_renderTargetView)
 	{
 		const float clearColor[4] = {r, g, b, a};
 		m_context->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
+		m_stats.clearCalls++;
 	}
 }
 
 void D3D11Renderer::SetViewport(int x, int y, int width, int height)
 {
+	if (width <= 0 || height <= 0)
+	{
+		Logger::Warning("Invalid viewport dimensions. Width and height must be positive");
+		return;
+	}
+
 	if (m_context)
 	{
 		D3D11_VIEWPORT viewport = {};
@@ -133,103 +156,6 @@ void D3D11Renderer::SetViewport(int x, int y, int width, int height)
 		viewport.MinDepth = 0.0f;
 		viewport.MaxDepth = 1.0f;
 		m_context->RSSetViewports(1, &viewport);
-	}
-}
-
-bool D3D11Renderer::InitializeImGui()
-{
-	if (!m_device || !m_context)
-		return false;
-
-	HWND hwnd = static_cast<HWND>(m_window->GetNativeHandle());
-
-	// Check if ImGui is already initialized
-	ImGuiContext *context = ImGui::GetCurrentContext();
-	if (!context)
-	{
-		// Setup ImGui context
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImGuiIO &io = ImGui::GetIO();
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-
-		// Setup ImGui style
-		ImGui::StyleColorsDark();
-
-		// When viewports are enabled we tweak WindowRounding/WindowBg
-		// so platform windows can look identical to regular ones
-		ImGuiStyle &style = ImGui::GetStyle();
-		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-		{
-			style.WindowRounding = 0.0f;
-			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-		}
-	}
-
-	// Check if backends are already initialized
-	ImGuiIO &io = ImGui::GetIO();
-	if (!io.BackendPlatformUserData)
-	{
-		ImGui_ImplWin32_Init(hwnd);
-	}
-
-	if (!io.BackendRendererUserData)
-	{
-		ImGui_ImplDX11_Init(m_device.Get(), m_context.Get());
-	}
-
-	return true;
-}
-
-void D3D11Renderer::ShutdownImGui()
-{
-	//TODO: fix maybe
-	// ImGuiIO& io = ImGui::GetIO();
-
-	// if (io.BackendRendererUserData)
-	// ImGui_ImplDX11_Shutdown();
-
-	// // if (io.BackendPlatformUserData)
-	// ImGui_ImplWin32_Shutdown();
-
-	// if (ImGui::GetCurrentContext())
-	// 	ImGui::DestroyContext();
-
-	// ImGui_ImplDX11_Shutdown();
-	// ImGui_ImplWin32_Shutdown();
-	// ImGui::DestroyContext();
-}
-
-void D3D11Renderer::NewImGuiFrame()
-{
-	ImGui_ImplDX11_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
-
-	// Enable docking over the main viewport
-	ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
-}
-
-void D3D11Renderer::RenderImGui()
-{
-	ImGuiIO &io = ImGui::GetIO();
-
-	// Rendering
-	ImGui::Render();
-
-	// Set render target
-	m_context->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), nullptr);
-
-	// Render ImGui
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
-	// Update and Render additional Platform Windows
-	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-	{
-		ImGui::UpdatePlatformWindows();
-		ImGui::RenderPlatformWindowsDefault();
 	}
 }
 
@@ -280,7 +206,9 @@ bool D3D11Renderer::CreateDeviceAndSwapChain(HWND hwnd, int width, int height)
 
 	if (FAILED(res))
 	{
-		std::cout << "D3D11CreateDeviceAndSwapChain failed with HRESULT: 0x" << std::hex << res << std::endl;
+		std::ostringstream oss;
+		oss << "D3D11CreateDeviceAndSwapChain failed with HRESULT: 0x" << std::hex << res;
+		Logger::Error(oss.str());
 		return false;
 	}
 
@@ -290,10 +218,22 @@ bool D3D11Renderer::CreateDeviceAndSwapChain(HWND hwnd, int width, int height)
 void D3D11Renderer::CreateRenderTarget()
 {
 	ComPtr<ID3D11Texture2D> backBuffer;
-	m_swapChain->GetBuffer(0, IID_PPV_ARGS(backBuffer.GetAddressOf()));
-	if (backBuffer)
+	HRESULT hr = m_swapChain->GetBuffer(0, IID_PPV_ARGS(backBuffer.GetAddressOf()));
+	if (SUCCEEDED(hr) && backBuffer)
 	{
-		m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, m_renderTargetView.GetAddressOf());
+		hr = m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, m_renderTargetView.GetAddressOf());
+		if (FAILED(hr))
+		{
+			std::ostringstream oss;
+			oss << "Failed to create render target view with HRESULT: 0x" << std::hex << hr;
+			Logger::Error(oss.str());
+		}
+	}
+	else
+	{
+		std::ostringstream oss;
+		oss << "Failed to get back buffer with HRESULT: 0x" << std::hex << hr;
+		Logger::Error(oss.str());
 	}
 }
 

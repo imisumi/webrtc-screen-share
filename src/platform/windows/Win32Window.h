@@ -9,10 +9,9 @@ class IRenderer;
 class Win32Window : public IWindow
 {
 public:
-    Win32Window();
+    Win32Window(const WindowConfig& config);
     ~Win32Window() override;
 
-    bool Initialize(const WindowConfig& config) override;
     void Shutdown() override;
 
     void PollEvents() override;
@@ -29,6 +28,8 @@ public:
     std::string_view GetPlatformName() const noexcept override { return "Win32"; }
 
 private:
+    bool Initialize(const WindowConfig& config);
+    
     static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     void HandleWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam);
     

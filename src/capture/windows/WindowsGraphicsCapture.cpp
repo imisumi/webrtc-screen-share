@@ -431,8 +431,8 @@ void WindowsGraphicsCapture::OnFrameArrived()
                                 
                                 context->Unmap(stagingTexture.get(), 0);
                                 
-                                std::cout << "Extracted real pixels: " << frameData.width << "x" << frameData.height 
-                                         << " stride:" << frameData.stride << " size:" << frameData.size << std::endl;
+                                // std::cout << "Extracted real pixels: " << frameData.width << "x" << frameData.height 
+                                //          << " stride:" << frameData.stride << " size:" << frameData.size << std::endl;
                             }
                         }
                     }

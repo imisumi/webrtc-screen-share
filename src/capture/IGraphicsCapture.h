@@ -104,4 +104,7 @@ public:
 	virtual bool IsCursorVisible() const = 0;
 
 	virtual std::string_view GetPlatformName() const noexcept = 0;
+
+	static std::unique_ptr<IGraphicsCapture> Create();
+	static std::string_view GetCurrentPlatform() noexcept;
 };

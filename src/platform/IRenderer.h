@@ -10,6 +10,12 @@ struct RenderStats
     int triangles = 0;
     float cpuTime = 0.0f;
     float gpuTime = 0.0f;
+    
+    // Additional stats for tracking
+    uint64_t frameCount = 0;
+    float frameTimeMs = 0.0f;
+    float fps = 0.0f;
+    int clearCalls = 0;
 };
 
 class IWindow; // Forward declaration
@@ -32,14 +38,10 @@ public:
     // Handle window resize
     virtual void OnWindowResize(int width, int height) = 0;
 
-    // ImGui integration
-    virtual bool InitializeImGui() = 0;
-    virtual void ShutdownImGui() = 0;
-    virtual void NewImGuiFrame() = 0;
-    virtual void RenderImGui() = 0;
-
     virtual RenderStats GetStats() const = 0;
     virtual std::string_view GetRendererName() const noexcept = 0;
     virtual void* GetDevice() const = 0; // For sharing with capture system
     virtual void* GetDeviceContext() const = 0; // For D3D11 context sharing
+
+    static std::unique_ptr<IRenderer> Create();
 };

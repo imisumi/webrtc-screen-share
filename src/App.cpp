@@ -4,8 +4,10 @@
 #include <iostream>
 #include <format>
 #include <stdexcept>
-#include "platform/WindowFactory.h"
-#include "platform/TextureFactory.h"
+// #include "platform/IWindow.h"
+#include "platform/IWindow.h"
+#include "platform/IRenderer.h"
+#include "platform/ITexture.h"
 
 #ifdef PLATFORM_WINDOWS
 #include <d3d11.h>
@@ -146,6 +148,8 @@ App::~App()
 	m_captureTexture.reset();
 
 	// Shutdown platform abstractions (window first to stop messages, then renderer)
+
+	m_imguiManager->Shutdown();
 	if (m_window)
 		m_window->Shutdown();
 	if (m_renderer)
@@ -157,12 +161,6 @@ App::~App()
 void App::run()
 {
 	// Create platform-specific window and renderer
-	m_window = WindowFactory::Create();
-	if (!m_window)
-	{
-		throw std::runtime_error("Failed to create window!");
-	}
-
 	WindowConfig config;
 	config.title = "WebRTC Screen Share";
 	config.width = m_width;
@@ -170,26 +168,25 @@ void App::run()
 	config.resizable = true;
 	config.vsync = true;
 
-	if (!m_window->Initialize(config))
-	{
-		throw std::runtime_error("Failed to initialize window!");
-	}
+	m_window = IWindow::Create(config);
 
 	// Set up window event callback
 	m_window->SetEventCallback([this](const WindowEvent &event)
 							   { this->OnWindowEvent(event); });
 
-	m_renderer = WindowFactory::CreateRenderer();
+	m_renderer = IRenderer::Create();
 	if (!m_renderer || !m_renderer->Initialize(m_window.get()))
 	{
 		throw std::runtime_error("Failed to create or initialize renderer!");
 	}
 
+	m_imguiManager->Initialize(m_window.get(), m_renderer.get());
+
 	// Initialize ImGui (this creates the context)
-	if (!m_renderer->InitializeImGui())
-	{
-		throw std::runtime_error("Failed to initialize ImGui!");
-	}
+	// if (!m_renderer->InitializeImGui())
+	// {
+	// 	throw std::runtime_error("Failed to initialize ImGui!");
+	// }
 
 	// Enable DPI awareness (after ImGui context exists)
 #ifdef PLATFORM_WINDOWS
@@ -202,7 +199,7 @@ void App::run()
 	std::cout << std::format("Platform: {}, Renderer: {}\n", m_window->GetPlatformName(), m_renderer->GetRendererName());
 
 	// Initialize Graphics Capture API
-	m_graphicsCapture = GraphicsCaptureFactory::Create();
+	m_graphicsCapture = IGraphicsCapture::Create();
 	if (m_graphicsCapture && m_graphicsCapture->Initialize())
 	{
 		std::cout << std::format("Graphics Capture API ({}) initialized successfully!\n", m_graphicsCapture->GetPlatformName());
@@ -224,8 +221,11 @@ void App::run()
 	}
 	else
 	{
-		std::cout << std::format("Failed to initialize Graphics Capture API on {}\n", GraphicsCaptureFactory::GetCurrentPlatform());
+		std::cout << std::format("Failed to initialize Graphics Capture API on {}\n", IGraphicsCapture::GetCurrentPlatform());
 	}
+
+
+	m_imguiManager = std::make_unique<ImGuiManager>();
 
 	// Main loop
 	while (!m_window->ShouldClose())
@@ -235,6 +235,7 @@ void App::run()
 
 		// Begin frame
 		m_renderer->BeginFrame();
+		m_imguiManager->NewFrame();
 		m_renderer->Clear(m_clear_color.x * m_clear_color.w,
 						  m_clear_color.y * m_clear_color.w,
 						  m_clear_color.z * m_clear_color.w,
@@ -244,7 +245,7 @@ void App::run()
 		RenderUI();
 
 		// End frame
-		m_renderer->EndFrame();
+		m_imguiManager->Render();
 		m_renderer->Present();
 	}
 }
@@ -460,7 +461,7 @@ void App::RenderUI()
 		}
 		else
 		{
-			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "✗ Graphics Capture Not Available (%s)", GraphicsCaptureFactory::GetCurrentPlatform());
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "✗ Graphics Capture Not Available (%s)", IGraphicsCapture::GetCurrentPlatform());
 		}
 
 		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);			   // Edit 1 float using a slider from 0.0f to 1.0f
@@ -580,7 +581,7 @@ void App::CreateCaptureTexture(int width, int height)
 	m_captureTexture.reset();
 
 	// Create new texture using factory
-	m_captureTexture = TextureFactory::Create();
+	m_captureTexture = ITexture::Create();
 	if (!m_captureTexture)
 	{
 		std::cout << "Failed to create texture from factory\n";

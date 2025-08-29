@@ -3,12 +3,15 @@
 # Common platform interface (always included)
 list(APPEND SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/IWindow.h
+	${CMAKE_CURRENT_SOURCE_DIR}/IWindow.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/IRenderer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/IRenderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ITexture.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/WindowFactory.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/WindowFactory.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/TextureFactory.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/TextureFactory.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ITexture.cpp
+    # ${CMAKE_CURRENT_SOURCE_DIR}/WindowFactory.h
+    # ${CMAKE_CURRENT_SOURCE_DIR}/WindowFactory.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/ImGuiManager.h
+	${CMAKE_CURRENT_SOURCE_DIR}/ImGuiManager.cpp
 )
 
 # Windows-specific platform files

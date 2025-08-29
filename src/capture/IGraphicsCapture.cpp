@@ -1,4 +1,4 @@
-#include "GraphicsCaptureFactory.h"
+#include "IGraphicsCapture.h"
 
 #ifdef PLATFORM_WINDOWS
 #include "windows/WindowsGraphicsCapture.h"
@@ -12,7 +12,7 @@
 #include "linux/LinuxGraphicsCapture.h"
 #endif
 
-std::unique_ptr<IGraphicsCapture> GraphicsCaptureFactory::Create()
+std::unique_ptr<IGraphicsCapture> IGraphicsCapture::Create()
 {
 #ifdef PLATFORM_WINDOWS
     return std::make_unique<WindowsGraphicsCapture>();
@@ -26,7 +26,7 @@ std::unique_ptr<IGraphicsCapture> GraphicsCaptureFactory::Create()
 #endif
 }
 
-std::string_view GraphicsCaptureFactory::GetCurrentPlatform() noexcept
+std::string_view IGraphicsCapture::GetCurrentPlatform() noexcept
 {
 #ifdef PLATFORM_WINDOWS
     return "Windows";
